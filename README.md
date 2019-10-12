@@ -73,3 +73,87 @@ ReactDOM.render(
 
 You can see the whole application at https://codesandbox.io/s/simple-saga-y5yu7
 
+Let's look at the sagamatic implementation of the same thing:
+```javascript
+import React from "react";
+import { Provider, useSelector, useDispatch } from "react-redux";
+import StoreManager from "sagamatic";
+import ReactDOM from "react-dom";
+import reducer from "./reducer";
+import { incrementValue, anyncIncrementValue, Actions } from "./actions";
+import { fetchData } from "./api";
+
+import "./styles.css";
+
+const storeManager = new StoreManager();
+storeManager.addAsyncFunc({
+  action: Actions.ASYNC_INCREMENT_VALUE,
+  asyncFunc: fetchData,
+  validTarget: Actions.RECEIVE_VALUE
+});
+const store = storeManager.createStore(reducer);
+
+function App() {
+  const value = useSelector(state => state.value);
+  const isFetching = useSelector(state => state.fetching);
+  const dispatch = useDispatch();
+  return (
+    <div className="App">
+      <h1>Simple Example Using Redux-Saga</h1>
+      <p>
+        <button onClick={() => dispatch(incrementValue())}>
+          Increment the Counter
+        </button>
+      </p>
+      <p>
+        {isFetching && <span>Fetching...</span>}
+        {!isFetching && (
+          <button onClick={() => dispatch(anyncIncrementValue())}>
+            Async Increment Counter
+          </button>
+        )}
+      </p>
+      <div>Counter: {value}</div>
+    </div>
+  );
+}
+
+const rootElement = document.getElementById("root");
+ReactDOM.render(
+  <Provider store={store}>
+    <App />
+  </Provider>,
+  rootElement
+);
+```
+You can see the whole application at https://codesandbox.io/s/simple-sagamatic-48jbt
+
+In order to issue the api call fetchData() we need to implement a function and make sure it is included in the root saga. We also need to apply and run the saga middleware. This is code involved:
+```javascript
+function* fetchSaga() {
+  const val = yield call(fetchData);
+  yield put({ type: Actions.RECEIVE_VALUE, payload: val });
+}
+
+function* rootSaga() {
+  yield takeEvery(Actions.ASYNC_INCREMENT_VALUE, fetchSaga);
+}
+
+const sagaMiddleware = createSagaMiddleware();
+const store = createStore(reducer, applyMiddleware(sagaMiddleware));
+sagaMiddleware.run(rootSaga);
+```
+
+With sagamatic the same functionality looks like the following.
+```javascript
+const storeManager = new StoreManager();
+storeManager.addAsyncFunc({
+  action: Actions.ASYNC_INCREMENT_VALUE,
+  asyncFunc: fetchData,
+  validTarget: Actions.RECEIVE_VALUE
+});
+const store = storeManager.createStore(reducer);
+```
+
+If you need to add more api calls. All you need to do is call StoreManager::addAsyncFunc with a configuration object. Of course, this is about the most simple example you can have, but more complex scenarios can be handled with the appropriate configuration. It is also possible to create your own sagas and attach them to the store manager which will take care of adding them to the root saga. 
+
