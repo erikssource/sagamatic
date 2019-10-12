@@ -1,6 +1,6 @@
 {
   "name": "sagamatic",
-  "version": "0.1.0",
+  "version": "0.2.0-alpha",
   "description": "Utility to reduce boilerplat code for saga-redux",
   "main": "index.js",
   "repository": "git@github.com:erikssource/sagamatic.git",

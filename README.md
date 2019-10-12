@@ -2,6 +2,10 @@
 # Sagamatic
 A utility for reducing the boilerplate code needed for saga-redux
 
+## Currently in Alpha Status
+The testing code is not yet complete and neither is the documentation so Sagamatic is not yet
+in a production state.
+
 ## Why Sagamatic?
 Saga-redux is a great tool for performing asynchronous calls when dispatching redux actions. However, you can find yourself writing a lot of code that is very similar. There's a very common pattern of having a saga call a REST endpoint, and either dispatch another action for a success or another action for a failure. Sagamatic helps to reduce the code needed for some of these common patterns.
 
