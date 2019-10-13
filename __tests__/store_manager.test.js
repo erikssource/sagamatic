@@ -7,6 +7,7 @@ const FETCH_OTHER = 'FETCH_OTHER';
 const RECEIVE_OTHER = 'RECEIVE_OTHER';
 const RECEIVE_VALUE = 'RECEIVE_VALUE';
 const FETCH_FAILED = 'FETCH_FAILED';
+const FETCH_FAILED_WITH_PAYLOAD = 'FETCH_FAILED_WITH_PAYLOAD';
 const FETCH_OTHER_FAILED = 'FETCH_OTHER_FAILED';
 const ACTION_NOOP = 'ACTION_NOOP';
 
@@ -16,12 +17,14 @@ const VALUE_OTHER = 'OtherValue';
 const VALUE_GOOD = 'GoodValue';
 const VALUE_BAD = 'BadValue';
 const VALUE_EXTRA = 'ExtraValue';
+const VALUE_ERROR_DATA = "ErrorPayload";
 
 const initialState = {
   value: VALUE_NONE,
   other: VALUE_NONE,
   lastAction: VALUE_NONE,
   extra: VALUE_EXTRA,
+  errorData: VALUE_NONE,
   actions: [],
 };
 
@@ -38,6 +41,8 @@ const reducer = (state=initialState, action) => {
       return {...state, other: payload, lastAction: RECEIVE_OTHER, actions: [...state.actions, RECEIVE_OTHER]};
     case FETCH_FAILED:
       return {...state, lastAction: FETCH_FAILED, actions: [...state.actions, FETCH_FAILED]};
+    case FETCH_FAILED_WITH_PAYLOAD:
+      return {...state, errorData: payload, lastAction: FETCH_FAILED_WITH_PAYLOAD, actions: [...state.actions, FETCH_FAILED_WITH_PAYLOAD]}
     case FETCH_OTHER_FAILED:
       return {...state, lastAction: FETCH_OTHER_FAILED, actions: [...state.actions, FETCH_OTHER_FAILED]};
     case ACTION_NOOP:
@@ -104,7 +109,7 @@ describe('Test test redux', () => {
       expect(store.getState().lastAction).toEqual(FETCH_FAILED);
       done();
     });
-    store.dispatch({type: FETCH_FAILED});
+    store.dispatch({type: FETCH_FAILED, payload: {error: VALUE_ERROR}});
   });
 });
 
@@ -193,45 +198,20 @@ describe('Simple Automatic Saga With Error Target', () => {
     });
     store.dispatch({type: FETCH_VALUE});
   });
-});
 
-describe('Simple Automatic Saga With Error Target', () => {
-  let storeManager = null;
-
-  beforeEach(() => {
-    storeManager = new StoreManager();
-  });
-
-  test('Single function with single target success', (done) => {
-    storeManager.addAsyncFunc({
-      action: FETCH_VALUE,
-      asyncFunc: fetchGoodValue,
-      validTarget: RECEIVE_VALUE,
-      errTarget: FETCH_FAILED,
-    });
-    const store = storeManager.createStore(reducer);
-    store.subscribe(() => {
-      if (store.getState().lastAction === RECEIVE_VALUE) {
-        expect(store.getState().value).toEqual(VALUE_GOOD);
-        expect(store.getState().other).toEqual(VALUE_NONE);
-        done();
-      }
-    });
-    store.dispatch({type: FETCH_VALUE});
-  });
-
-  test('Single function with single target exception', (done) => {
+  test('Single function with errTarget object exception', (done) => {
     storeManager.addAsyncFunc({
       action: FETCH_VALUE,
       asyncFunc: fetchException,
       validTarget: RECEIVE_VALUE,
-      errTarget: FETCH_FAILED,
+      errTarget: {type: FETCH_FAILED_WITH_PAYLOAD, data: VALUE_ERROR_DATA},
     });
     const store = storeManager.createStore(reducer);
     store.subscribe(() => {
-      if (store.getState().lastAction === FETCH_FAILED) {
+      if (store.getState().lastAction === FETCH_FAILED_WITH_PAYLOAD) {
         expect(store.getState().value).toEqual(VALUE_NONE);
         expect(store.getState().other).toEqual(VALUE_NONE);
+        expect(store.getState().errorData).toEqual(VALUE_ERROR_DATA);
         done();
       }
     });
@@ -385,6 +365,50 @@ describe('Test using saga', () => {
         done();
       }
     });
+    store.dispatch({type: FETCH_VALUE});
+  });
+});
+
+describe('Test onBefore and onAfter', () => {
+  let beforeMock = null;
+
+  beforeEach(() => {
+    beforeMock = jest.fn();
+  });
+
+  test('Test with onBefore', (done) => {
+    const storeManager = new StoreManager({onBefore: beforeMock, devToolsEnabled: true});
+    storeManager.addAsyncFunc({
+      action: FETCH_VALUE,
+      asyncFunc: fetchGoodValue,
+      validTarget: RECEIVE_VALUE,
+    });
+    const store = storeManager.createStore(reducer);
+    store.subscribe(() => {
+      if (store.getState().lastAction === RECEIVE_VALUE) {
+        expect(beforeMock).toBeCalledWith(FETCH_VALUE);
+        expect(store.getState().value).toEqual(VALUE_GOOD);
+        expect(store.getState().other).toEqual(VALUE_NONE);
+        done();
+      }
+    });
+    store.dispatch({type: FETCH_VALUE});
+  });
+
+  test('Test with onAfter', (done) => {
+    let store = null;
+    const afterFunc = (action) => {
+      expect(action).toEqual(FETCH_VALUE);
+      expect(store.getState().value).toEqual(VALUE_GOOD);
+      done();
+    };
+    const storeManager = new StoreManager({onAfter: afterFunc});
+    storeManager.addAsyncFunc({
+      action: FETCH_VALUE,
+      asyncFunc: fetchGoodValue,
+      validTarget: RECEIVE_VALUE,
+    });
+    store = storeManager.createStore(reducer);
     store.dispatch({type: FETCH_VALUE});
   });
 });
