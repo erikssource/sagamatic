@@ -1,5 +1,6 @@
 import StoreManager from '..';
 import {createStore} from 'redux';
+import {call, put} from 'redux-saga/effects';
 
 const FETCH_VALUE = 'FETCH_VALUE';
 const FETCH_OTHER = 'FETCH_OTHER';
@@ -68,6 +69,11 @@ const replaceValue = async function(value) {
 
 const fetchValidator = function(value) {
   return {valid: value === VALUE_GOOD, data: value};
+};
+
+const fullSaga = function* () {
+  const val = yield call(fetchGoodValue);
+  yield put({type: RECEIVE_VALUE, payload: val});
 };
 
 describe('Test test redux', () => {
@@ -348,6 +354,33 @@ describe('Test using selector', () => {
     store.subscribe(() => {
       if (store.getState().lastAction === RECEIVE_VALUE) {
         expect(store.getState().value).toEqual(VALUE_EXTRA);
+        expect(store.getState().other).toEqual(VALUE_NONE);
+        done();
+      }
+    });
+    store.dispatch({type: FETCH_VALUE});
+  });
+});
+
+describe('Test using saga', () => {
+  let storeManager = null;
+
+  beforeEach(() => {
+    storeManager = new StoreManager();
+  });
+
+  test('Test using full saga', (done) => {
+    storeManager.addAsyncFunc({
+      action: FETCH_OTHER,
+      asyncFunc: fetchOtherValue,
+      validTarget: RECEIVE_OTHER,
+      errTarget: FETCH_OTHER_FAILED,
+    });
+    storeManager.addSaga(FETCH_VALUE, fullSaga);
+    const store = storeManager.createStore(reducer);
+    store.subscribe(() => {
+      if (store.getState().lastAction === RECEIVE_VALUE) {
+        expect(store.getState().value).toEqual(VALUE_GOOD);
         expect(store.getState().other).toEqual(VALUE_NONE);
         done();
       }
