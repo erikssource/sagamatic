@@ -34,6 +34,7 @@ export class StoreManager {
       selector = null,
       errCallback = null,
       validTarget = null,
+      invalidTarget = null,
       errTarget = null,
     } = funcConfig;
 
@@ -47,6 +48,7 @@ export class StoreManager {
       selector,
       errCallback,
       validTarget,
+      invalidTarget,
       errTarget,
     });
   }
@@ -65,10 +67,14 @@ export class StoreManager {
               handler.validateCallback(yield call(handler.asyncFunc, action)) :
               handler.validateCallback(
                   yield call(handler.asyncFunc, yield select(handler.selector), action));
-            if (result.valid &&
-              typeof handler.validTarget === 'string' &&
-              handler.validTarget.length > 0) {
-              yield put({type: handler.validTarget, payload: result.data});
+            if (result.valid) {
+              if (typeof handler.validTarget === 'string' && handler.validTarget.length > 0) {
+                yield put({type: handler.validTarget, payload: result.data});
+              }
+            } else {
+              if (typeof handler.invalidTarget === 'string' && handler.invalidTarget.length > 0) {
+                yield put({type: handler.invalidTarget, payload: result.data});
+              }
             }
           } catch (error) {
             handler.errCallback && handler.errCallback(error);
