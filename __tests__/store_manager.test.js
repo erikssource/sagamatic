@@ -17,7 +17,7 @@ const VALUE_OTHER = 'OtherValue';
 const VALUE_GOOD = 'GoodValue';
 const VALUE_BAD = 'BadValue';
 const VALUE_EXTRA = 'ExtraValue';
-const VALUE_ERROR_DATA = "ErrorPayload";
+const VALUE_ERROR_DATA = 'ErrorPayload';
 
 const initialState = {
   value: VALUE_NONE,
@@ -42,7 +42,7 @@ const reducer = (state=initialState, action) => {
     case FETCH_FAILED:
       return {...state, lastAction: FETCH_FAILED, actions: [...state.actions, FETCH_FAILED]};
     case FETCH_FAILED_WITH_PAYLOAD:
-      return {...state, errorData: payload, lastAction: FETCH_FAILED_WITH_PAYLOAD, actions: [...state.actions, FETCH_FAILED_WITH_PAYLOAD]}
+      return {...state, errorData: payload, lastAction: FETCH_FAILED_WITH_PAYLOAD, actions: [...state.actions, FETCH_FAILED_WITH_PAYLOAD]};
     case FETCH_OTHER_FAILED:
       return {...state, lastAction: FETCH_OTHER_FAILED, actions: [...state.actions, FETCH_OTHER_FAILED]};
     case ACTION_NOOP:
