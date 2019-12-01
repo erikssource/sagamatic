@@ -106,7 +106,7 @@ export class StoreManager {
     }.bind(this);
 
     const sagaMiddleware = createSagaMiddleware();
-    const composeEnhancers = this.enableDevTools ?
+    const composeEnhancers = this.devToolsEnabled ?
       window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__ || compose :
       compose;
 
