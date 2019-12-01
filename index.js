@@ -106,14 +106,14 @@ export class StoreManager {
     }.bind(this);
 
     const sagaMiddleware = createSagaMiddleware();
-    const composeEnhancers = this.devToolsEnabled ?
+    const composeEnhancers = window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__ && this.devToolsEnabled ?
       window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__ || compose :
       compose;
 
     const store = createStore(
         rootReducer,
         initialState,
-        composeEnhancers(applyMiddleware(sagaMiddleware, ...middlewares))
+        composeEnhancers(applyMiddleware(sagaMiddleware, ...middlewares)),
     );
 
     sagaMiddleware.run(watchSaga);
