@@ -7,6 +7,7 @@ const FETCH_OTHER = 'FETCH_OTHER';
 const RECEIVE_OTHER = 'RECEIVE_OTHER';
 const RECEIVE_VALUE = 'RECEIVE_VALUE';
 const FETCH_FAILED = 'FETCH_FAILED';
+const FETCH_FAILED_INVALID_ACTION = 2;
 const FETCH_FAILED_WITH_PAYLOAD = 'FETCH_FAILED_WITH_PAYLOAD';
 const FETCH_OTHER_FAILED = 'FETCH_OTHER_FAILED';
 const FETCH_OTHER_FAILED_TWO = 'FETCH_OTHER_FAILED_TWO';
@@ -251,6 +252,59 @@ describe('Simple Automatic Saga With Error Target', () => {
     });
     store.dispatch({type: FETCH_VALUE});
   });
+
+  test('Single function with multiple target exception one target invalid', (done) => {
+    storeManager.addAsyncFunc({
+      action: FETCH_VALUE,
+      asyncFunc: fetchException,
+      validTarget: RECEIVE_VALUE,
+      errTarget: [FETCH_FAILED_INVALID_ACTION, FETCH_FAILED],
+    });
+    const store = storeManager.createStore(reducer);
+    store.subscribe(() => {
+      if (store.getState().lastAction === FETCH_FAILED) {
+        // Invalid error action should simply be skipped
+        expect(store.getState().actions[0]).toEqual(FETCH_VALUE);
+        expect(store.getState().actions[1]).toEqual(FETCH_FAILED);
+        expect(store.getState().value).toEqual(VALUE_NONE);
+        expect(store.getState().other).toEqual(VALUE_NONE);
+        done();
+      }
+    });
+    store.dispatch({type: FETCH_VALUE});
+  });
+});
+
+describe('Multiple Async Function for Same Action', () => {
+  let storeManager = null;
+
+  beforeEach(() => {
+    storeManager = new StoreManager();
+  });
+
+  test('Two functions for a single action', (done) => {
+    storeManager.addAsyncFunc({
+      action: FETCH_VALUE,
+      asyncFunc: fetchGoodValue,
+      validTarget: RECEIVE_VALUE,
+      errTarget: FETCH_FAILED,
+    });
+    storeManager.addAsyncFunc({
+      action: FETCH_VALUE,
+      asyncFunc: fetchOtherValue,
+      validTarget: RECEIVE_OTHER,
+      errTarget: FETCH_FAILED,
+    });
+    const store = storeManager.createStore(reducer);
+    store.subscribe(() => {
+      if (store.getState().actions.includes(RECEIVE_OTHER) && store.getState().actions.includes(RECEIVE_VALUE)) {
+        expect(store.getState().value).toEqual(VALUE_GOOD);
+        expect(store.getState().other).toEqual(VALUE_OTHER);
+        done();
+      }
+    });
+    store.dispatch({type: FETCH_VALUE});
+  });
 });
 
 describe('Multiple Async Functions For Different Actions', () => {
@@ -284,7 +338,7 @@ describe('Multiple Async Functions For Different Actions', () => {
     store.dispatch({type: FETCH_OTHER});
   });
 
-  test('Two functions with single target failure', (done) => {
+  test('Two functions with multiple target failure', (done) => {
     storeManager.addAsyncFunc({
       action: FETCH_OTHER,
       asyncFunc: fetchException,
