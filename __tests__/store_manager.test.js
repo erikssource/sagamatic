@@ -159,6 +159,37 @@ describe('Simple Automatic Saga Success', () => {
   });
 });
 
+describe('Simple Automatic Saga With Error Callback', () => {
+  let storeManager = null;
+  let callbackCalled = false;
+
+  beforeEach(() => {
+    storeManager = new StoreManager();
+  });
+
+  test('Single function with errCallback', (done) => {
+    storeManager.addAsyncFunc({
+      action: FETCH_VALUE,
+      asyncFunc: fetchException,
+      validTarget: RECEIVE_VALUE,
+      errCallback: (error) => {
+        callbackCalled = true;
+      },
+      errTarget: FETCH_FAILED,
+    });
+    const store = storeManager.createStore(reducer);
+    store.subscribe(() => {
+      if (store.getState().lastAction === FETCH_FAILED) {
+        expect(callbackCalled).toEqual(true);
+        expect(store.getState().value).toEqual(VALUE_NONE);
+        expect(store.getState().other).toEqual(VALUE_NONE);
+        done();
+      }
+    });
+    store.dispatch({type: FETCH_VALUE});
+  });
+});
+
 describe('Simple Automatic Saga With Error Target', () => {
   let storeManager = null;
 

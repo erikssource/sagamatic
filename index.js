@@ -77,7 +77,9 @@ export class StoreManager {
               }
             }
           } catch (error) {
-            handler.errCallback && handler.errCallback(error);
+            if (handler.errCallback) {
+              yield call(handler.errCallback, error);
+            }
             if (Array.isArray(handler.errTarget)) {
               for (const errTarget of handler.errTarget) {
                 yield* this._handleError(errTarget);
