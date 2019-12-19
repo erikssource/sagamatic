@@ -9,6 +9,7 @@ const RECEIVE_VALUE = 'RECEIVE_VALUE';
 const FETCH_FAILED = 'FETCH_FAILED';
 const FETCH_FAILED_WITH_PAYLOAD = 'FETCH_FAILED_WITH_PAYLOAD';
 const FETCH_OTHER_FAILED = 'FETCH_OTHER_FAILED';
+const FETCH_OTHER_FAILED_TWO = 'FETCH_OTHER_FAILED_TWO';
 const ACTION_NOOP = 'ACTION_NOOP';
 
 const VALUE_NONE = 'None';
@@ -34,7 +35,7 @@ const reducer = (state=initialState, action) => {
     case FETCH_VALUE:
       return {...state, lastAction: FETCH_VALUE, actions: [...state.actions, FETCH_VALUE]};
     case FETCH_OTHER:
-      return {...state, lastAction: FETCH_OTHER, action: [...state.actions, FETCH_OTHER]};
+      return {...state, lastAction: FETCH_OTHER, actions: [...state.actions, FETCH_OTHER]};
     case RECEIVE_VALUE:
       return {...state, value: payload, lastAction: RECEIVE_VALUE, actions: [...state.actions, RECEIVE_VALUE]};
     case RECEIVE_OTHER:
@@ -45,6 +46,8 @@ const reducer = (state=initialState, action) => {
       return {...state, errorData: payload, lastAction: FETCH_FAILED_WITH_PAYLOAD, actions: [...state.actions, FETCH_FAILED_WITH_PAYLOAD]};
     case FETCH_OTHER_FAILED:
       return {...state, lastAction: FETCH_OTHER_FAILED, actions: [...state.actions, FETCH_OTHER_FAILED]};
+    case FETCH_OTHER_FAILED_TWO:
+      return {...state, lastAction: FETCH_OTHER_FAILED_TWO, actions: [...state.actions, FETCH_OTHER_FAILED_TWO]};
     case ACTION_NOOP:
       return {...state, lastAction: ACTION_NOOP, actions: [...state.actions, ACTION_NOOP]};
     default:
@@ -255,11 +258,14 @@ describe('Multiple Async Functions For Different Actions', () => {
       action: FETCH_OTHER,
       asyncFunc: fetchException,
       validTarget: RECEIVE_OTHER,
-      errTarget: FETCH_OTHER_FAILED,
+      errTarget: [FETCH_OTHER_FAILED, FETCH_OTHER_FAILED_TWO],
     });
     const store = storeManager.createStore(reducer);
     store.subscribe(() => {
-      if (store.getState().lastAction === FETCH_OTHER_FAILED) {
+      if (store.getState().lastAction === FETCH_OTHER_FAILED_TWO) {
+        expect(store.getState().actions[0]).toEqual(FETCH_OTHER);
+        expect(store.getState().actions[1]).toEqual(FETCH_OTHER_FAILED);
+        expect(store.getState().actions[2]).toEqual(FETCH_OTHER_FAILED_TWO);
         expect(store.getState().value).toEqual(VALUE_NONE);
         expect(store.getState().other).toEqual(VALUE_NONE);
         done();
